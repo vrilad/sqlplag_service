@@ -1,0 +1,70 @@
+openapi: 3.0.0
+info:
+  title: SQLPlagService
+  description: API для проверки SQL-запросов на плагиат
+  version: 1.0.0
+servers:
+  - url: http://localhost:5000
+    description: Local development server
+
+paths:
+  /check/:
+    post:
+      summary: Проверяет сходство между двумя SQL-запросами
+      description: Сопоставляет два SQL-запроса ("референс" и "кандидат") и возвращает процент заимствования. Автоматически обноруживает, где использовать алгоритм для запросов, начинающихся с "Select", CTE и иных.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CheckInput'
+      responses:
+        '200':
+          description: Успешно
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CheckResult'
+        '400':
+          description: Bad Request - Некорректные входные данные
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/BadRequest'
+
+components:
+  schemas:
+    CheckInput:
+      type: object
+      required:
+        - ref_code
+        - candidate_code
+      properties:
+        ref_code:
+          type: string
+          description: SQL-запрос "референс" для сравнения
+          example: "Select ship, count(ship) From Outcomes Group by ship Having count(ship) > 1 "
+        candidate_code:
+          type: string
+          description: SQL-запрос "кандидат" для сравнения
+          example: "SELECT ship, count(ship) as count_ship from Outcomes Group by ship Having count(ship) >1"
+    
+    CheckResult:
+      type: object
+      properties:
+        percent:
+          type: string
+          description: Процент схожести между двумя SQL-запросами
+          example: "84"
+    
+    BadRequest:
+      type: object
+      properties:
+        error:
+          type: string
+          description: Error type
+          example: "ValidationError"
+        details:
+          type: object
+          description: Validation error details
+          example: {"ref_code": ["Missing data for required field."]}

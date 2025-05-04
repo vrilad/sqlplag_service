@@ -14,22 +14,24 @@ from src.schema import (
     CheckSchema
 )
 
-
 def create_app():
-
 
     app = Flask(__name__)
 
     @app.errorhandler(400)
     def bad_request_handler(ex: ValidationError):
+        """
+        Обработка ошибки 400 - Bad Request.
+        """
         return BadRequestSchema().dump(ex), 400
 
     @app.route('/check/', methods=['get', 'post'])
     def check() -> CheckResult: 
-
+        """
+        Endpoint для проверки SQL-запросов на плагиат.
+        """
         schema = CheckSchema()
         service = AntiplagService()
-
 
         try:    
             request_data: CheckInput = request.json

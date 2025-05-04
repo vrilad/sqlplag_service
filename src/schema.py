@@ -10,8 +10,6 @@ from .entities import (
     CheckInput
 )
 
-
-
 class CheckSchema(Schema):
 
     ref_code = String(required=True, load_only=True)
@@ -30,7 +28,7 @@ class BadRequestSchema(Schema):
     details = Method('dump_details')
 
     def dump_error(self, obj):
-        return 'Validation Error'
+        return 'ValidationError'
 
     def dump_details(self, obj):
         return obj.description.messages

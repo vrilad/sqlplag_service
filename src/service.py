@@ -1,4 +1,5 @@
 import re
+import cappa_sqlplag
 from difflib import SequenceMatcher
 from abc import ABC, abstractmethod
 from .entities import (
@@ -9,14 +10,7 @@ from .entities import (
 class AntiplagBaseService(ABC):
     """
     Базовый абстрактный класс для сервисов проверки на плагиат.
-    """
-    def tokenize(self, sql_query):
-        """
-        Токенизирует SQL-запрос, разбивая его на лексемы (токены).
-        """
-        tokens = re.findall(r"\w+|[^\w\s]", sql_query.lower())
-        return tokens
-    
+    """    
     @abstractmethod
     def check_plagiarism(self, data: CheckInput):
         """
@@ -30,18 +24,28 @@ class SQLService(AntiplagBaseService):
     """
     def check_plagiarism(self, data: CheckInput):
         """
-        Проверяет SQL-запросы на плагиат, сравнивая их сходство с использованием расстояния Левенштейна.
+        Проверяет SQL-запросы, начинающиеся с Select, на плагиат.
         """
         ref_code: str = data['ref_code']
         candidate_code: str = data['candidate_code']
 
-        tokens1 = self.tokenize(ref_code)
-        tokens2 = self.tokenize(candidate_code)
+        sqlplag = cappa_sqlplag.SQLPlag(ref_code=ref_code, candidate_code=candidate_code) 
+        similarity_percentage = sqlplag.similarity_percentage()
         
-        matcher = SequenceMatcher(None, tokens1, tokens2)
-        similarity_ratio = matcher.ratio()
+        return CheckResult(percent=similarity_percentage)
+    
+class CTEService(AntiplagBaseService):
         
-        similarity_percentage = similarity_ratio * 100
+    def check_plagiarism(self, data: CheckInput):
+        """
+        Проверяет SQL-запросы, начинающиеся с With, на плагиат.
+        """
+        ref_code: str = data['ref_code']
+        candidate_code: str = data['candidate_code']
+
+        sqlplag = cappa_sqlplag.SQLPlag(ref_code=ref_code, candidate_code=candidate_code) 
+        similarity_percentage = sqlplag.cte_similarity_percentage()
+        
         return CheckResult(percent=similarity_percentage)
 
 
@@ -52,9 +56,16 @@ class AntiplagService:
     """
     def check(self, data: CheckInput):
         """
-        Проверяет код запросов на наличие плагиата, используя SQLService.
+        Проверяет код запросов на наличие плагиата, используя сервисы.
         """ 
-        service = SQLService()
+        ref_code: str = data['ref_code']
+        candidate_code: str = data['candidate_code']
+
+        if all(code.lower().startswith('select') for code in (ref_code, candidate_code)):
+            service = SQLService()
+        else:
+            service = CTEService()
+
         return service.check_plagiarism(data)
 
 

@@ -8,7 +8,7 @@
 
 **Endpoint:**  `/check/`  
 
-**Methods:**  `GET`, `POST`
+**Methods:**  `POST`
 
 **Body:**
 ```json
@@ -26,7 +26,7 @@
 
 {
 
-"percent": "95.0"
+"percent": "84"
 
 }
 ```
